@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>EI PSM Framework Audit Tool — All 20 Elements</title>
+<title>risk2safe PSM Audit Studio — EI Framework · CCPS-Aligned · All 20 Elements</title>
 <style>
+
 :root{--navy:#1a2744;--mid:#2c3e6b;--orange:#e8600a;--orange2:#f5a052;
   --s1:#c0392b;--s2:#d35400;--s3:#2980b9;--s4:#27ae60;--sna:#95a5a6;
   --s1l:#fdecea;--s2l:#fef5ec;--s3l:#eaf4fb;--s4l:#eafaf1;--snal:#f2f3f4;
@@ -188,13 +189,29 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:#1a1a2e;
   body{background:#fff;}
   .el-page,.dash-page{display:none;}
 }
+
+
+/* risk2safe PSM Audit Studio additions */
+.scoring-gate{background:#fff8f4;border:2px dashed var(--orange);border-radius:12px;padding:44px 30px;text-align:center;color:var(--muted);margin:20px;}
+.scoring-gate h3{font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px;}
+.scoring-gate p{font-size:13px;margin-bottom:16px;line-height:1.6;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fg label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+.fg input,.fg select,.fg textarea{padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:#fafbfd;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--orange);}
+.api-info{background:linear-gradient(135deg,#f0eaff,#eaf0ff);border:1px solid #c5aae8;border-radius:7px;padding:9px;font-size:11px;color:#333;margin-top:5px;line-height:1.6;}
+.rewrite-box{background:linear-gradient(135deg,#eafaf1,#eaf4ff);border:1px solid #a9dfbf;border-radius:7px;padding:9px 11px;margin-top:5px;font-size:11px;line-height:1.6;}
+
 </style>
 </head>
 <body>
 <div id="hdr">
   <div style="display:flex;align-items:center;gap:10px">
     <div style="font-size:22px">🔒</div>
-    <div><h1>EI PSM Framework Audit Tool</h1><div class="sub">All 20 Elements · AI-Assisted Scoring · Professional Report Generation</div></div>
+    <div>
+      <h1>risk2safe PSM Audit Studio</h1>
+      <div class="sub">EI Framework · CCPS-Aligned · All 20 Elements · AI-Assisted · Professional Reports</div>
+    </div>
   </div>
   <div class="hdr-right">
     <div class="mode-toggle">
@@ -222,16 +239,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:#1a1a2e;
   <div id="sidebar"></div>
   <div id="content"></div>
 </div>
-
 <div class="overlay" id="settings-modal">
   <div class="modal">
-    <h2>⚙️ Audit Settings</h2>
+    <h2>⚙️ Settings</h2>
     <div class="desc">Configure facility details and AI assistant.</div>
     <div class="fg"><label>Facility / Plant Name</label><input id="f-name" type="text" placeholder="Enter facility name"></div>
     <div class="fg"><label>Lead Auditor</label><input id="f-auditor" type="text" placeholder="Auditor name"></div>
     <div class="fg"><label>Audit Date</label><input id="f-date" type="date"></div>
     <div class="fg"><label>Audit Type</label>
-      <select id="f-type"><option>Annual Internal Audit</option><option>Third-Party Audit</option><option>Regulatory Audit</option><option>Pre-Startup Audit</option><option>Management Review</option><option>Gap Assessment</option></select>
+      <select id="f-type"><option>Annual Internal Audit</option><option>Third-Party Audit</option><option>Regulatory Audit</option><option>Pre-Startup Audit</option><option>Management Review</option><option>Gap Assessment</option><option>Regulatory Triennial (OSHA PSM)</option><option>Post-Incident Review</option><option>Due Diligence (M&A)</option></select>
     </div>
     <div class="fg"><label>AI Provider</label>
       <select id="f-prov" onchange="toggleProv(this.value)">
@@ -242,12 +258,12 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:#1a1a2e;
     <div class="fg" id="oai-grp">
       <label>OpenAI API Key</label>
       <input id="f-oaikey" type="password" placeholder="sk-proj-...">
-      <div class="api-info">Get your key at <strong>platform.openai.com/api-keys</strong>. Key stored only in your browser's localStorage — never sent anywhere except OpenAI's API.</div>
+      <div class="api-info">Get your key at <strong>platform.openai.com/api-keys</strong>. Key stored only in your browser's localStorage.</div>
     </div>
     <div class="fg" id="ant-grp" style="display:none">
       <label>Anthropic API Key</label>
       <input id="f-antkey" type="password" placeholder="sk-ant-api03-...">
-      <div class="api-info">Get your key at <strong>console.anthropic.com</strong>. If you see "Failed to fetch", switch to OpenAI — some corporate firewalls block direct browser calls to Anthropic.</div>
+      <div class="api-info">Get your key at <strong>console.anthropic.com</strong>. If you see "Failed to fetch", switch to OpenAI.</div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" onclick="document.getElementById('settings-modal').classList.remove('open')">Cancel</button>
@@ -294,25 +310,46 @@ function stats(){
 function sidebar(){
   const grps={'Process Safety Leadership':[1,2,3,4,5],'Risk ID & Assessment':[6,7],'Risk Management':[8,9,10,11,12,13,14,15,16,17,18],'Review & Improvement':[19,20]};
   const s=stats();
-  let h=`<div class="nav-el special${ST.view==='dashboard'?' active':''}" onclick="showDash()">
+  const overdueAI=(ST.actionItems||[]).filter(a=>a.dueDate&&new Date(a.dueDate)<new Date()&&a.status!=='Complete').length;
+  let h=`
+  <div class="nav-el special${ST.view==='setup'?' active':''}" onclick="showSetup()" style="border-left:3px solid ${ST.setupComplete?'var(--s4)':'var(--orange2)'}">
+    <span class="nav-icon">🎯</span>
+    <div class="nav-txt"><div class="nav-title">Audit Setup${ST.setupComplete?' ✅':' ⚠'}</div><div class="nav-sub">${ST.setupComplete?'Complete':'Required before scoring'}</div></div></div>
+  <div class="nav-el special${ST.view==='dashboard'?' active':''}" onclick="showDash()">
     <span class="nav-icon">📊</span><div class="nav-txt"><div class="nav-title">Dashboard</div><div class="nav-sub">Overall progress</div></div>
     <span class="nav-badge b-s3">${s.pct}%</span></div>
-  <div class="nav-el special${ST.view==='report'?' active':''}" onclick="showReport()">
-    <span class="nav-icon">📄</span><div class="nav-txt"><div class="nav-title">Audit Report</div><div class="nav-sub">Generate & export</div></div></div>
-  <div class="nav-el special" onclick="showSettings()">
-    <span class="nav-icon">⚙️</span><div class="nav-txt"><div class="nav-title">Settings</div><div class="nav-sub">AI key & facility</div></div></div>`;
+  <div style="height:1px;background:rgba(255,255,255,.1);margin:4px 10px"></div>`;
   for(const[grp,ids] of Object.entries(grps)){
     h+=`<div class="nav-grp">${grp}</div>`;
     ids.forEach(id=>{
       const el=ELEMENTS.find(e=>e.id===id);
       const sc=elScore(el);const pct=elPct(el);const ans=elAns(el);const tot=elQs(el).length;
       const act=ST.view==='element'&&ST.elId===id;
-      let badge=ans===0?`<span class="nav-badge b-new">—</span>`:sc==null?'':sc<2?`<span class="nav-badge b-s1">${pct}%</span>`:sc<2.5?`<span class="nav-badge b-s2">${pct}%</span>`:sc<3.5?`<span class="nav-badge b-s3">${pct}%</span>`:`<span class="nav-badge b-s4">${pct}%</span>`;
+      let badge=ans===0?`<span class="nav-badge b-new">—</span>`:
+        sc==null?'':sc<2?`<span class="nav-badge b-s1">${pct}%</span>`:
+        sc<2.5?`<span class="nav-badge b-s2">${pct}%</span>`:
+        sc<3.5?`<span class="nav-badge b-s3">${pct}%</span>`:
+        `<span class="nav-badge b-s4">${pct}%</span>`;
       h+=`<div class="nav-el${act?' active':''}" onclick="showEl(${id})">
         <span class="nav-icon">${el.icon}</span>
         <div class="nav-txt"><div class="nav-title">E${id}: ${el.title}</div><div class="nav-sub">${ans}/${tot} scored</div></div>${badge}</div>`;
     });
   }
+  h+=`<div style="height:1px;background:rgba(255,255,255,.1);margin:4px 10px"></div>
+  <div class="nav-grp">Audit Governance</div>
+  <div class="nav-el special${ST.view==='interviews'?' active':''}" onclick="showInterviews()">
+    <span class="nav-icon">👥</span><div class="nav-txt"><div class="nav-title">Interview Planner</div><div class="nav-sub">${(ST.interviews||[]).length} interview${(ST.interviews||[]).length!==1?'s':''}</div></div></div>
+  <div class="nav-el special${ST.view==='meetings'?' active':''}" onclick="showMeetings()">
+    <span class="nav-icon">📅</span><div class="nav-txt"><div class="nav-title">Daily Meetings</div><div class="nav-sub">Team & Facility templates</div></div></div>
+  <div class="nav-el special${ST.view==='actions'?' active':''}" onclick="showActions()">
+    <span class="nav-icon">✅</span><div class="nav-txt"><div class="nav-title">Action Items</div><div class="nav-sub">${(ST.actionItems||[]).length} total</div></div>${overdueAI>0?`<span class="nav-badge b-s1">${overdueAI}</span>`:''}</div>
+  <div class="nav-el special${ST.view==='doccontrol'?' active':''}" onclick="showDocControl()">
+    <span class="nav-icon">🔒</span><div class="nav-txt"><div class="nav-title">Close-Out</div><div class="nav-sub">Document control</div></div></div>
+  <div style="height:1px;background:rgba(255,255,255,.1);margin:4px 10px"></div>
+  <div class="nav-el special${ST.view==='report'?' active':''}" onclick="showReport()">
+    <span class="nav-icon">📄</span><div class="nav-txt"><div class="nav-title">Audit Report</div><div class="nav-sub">Generate & export</div></div></div>
+  <div class="nav-el special" onclick="showSettings()">
+    <span class="nav-icon">⚙️</span><div class="nav-txt"><div class="nav-title">Settings</div><div class="nav-sub">AI key & facility</div></div></div>`;
   document.getElementById('sidebar').innerHTML=h;
 }
 
@@ -337,6 +374,11 @@ function setMode(m){
 }
 
 function showEl(id){
+  if(!ST.setupComplete){
+    ST.view='element';ST.elId=id;sidebar();
+    document.getElementById('content').innerHTML=`<div class="el-page"><div class="scoring-gate"><div style="font-size:48px;margin-bottom:12px">🎯</div><h3>Audit Setup Required</h3><p>Please complete the <strong>Audit Setup Wizard</strong> before accessing the scoring interface.<br><small style="color:var(--muted)">CCPS §2.1 — Pre-audit planning must be completed before scoring begins.</small></p><button class="btn btn-orange" onclick="showSetup()" style="margin-top:8px">Go to Audit Setup Wizard →</button></div></div>`;
+    updateProg();return;
+  }
   ST.view='element';ST.elId=id;sidebar();
   const el=ELEMENTS.find(e=>e.id===id);
   const qs=elQs(el);const sc=elScore(el);const pct=elPct(el);
@@ -362,37 +404,44 @@ function showEl(id){
 
 function buildCard(q,elId){
   const score=ST.scores[q.id]||'';const notes=ST.notes[q.id]||'';const sugg=ST.aiSugg[q.id];
+  const compliance=(ST.compliance||{})[q.id]||'';
+  const isDetailed=ST.mode==='detailed';
   const cc=score?(score==='N/A'?'sna':'s'+score):'';
+
   const btns=['N/A','1','2','3','4'].map(v=>{
     const ac=score===v?`a-${v==='N/A'?'na':'s'+v}`:'';
     return `<button class="s-btn ${ac}" onclick="setScore('${q.id}','${elId}','${v}')">${v}</button>`;
   }).join('');
-  // Build 3-column criteria table
+
   let rows='';
   const rn=['Major Deficiency','Minor Deficiency','Meets Expectations','Exceeds Expectations'];
-  [1,2,3,4].forEach(n=>{
-    const c=q['c'+n]||'';const ev=(q['e'+n]||[]);
-    const rc=`row-s${n}`;const sb=`sb-${n}`;
-    rows+=`<tr class="${rc}">
-      <td class="score-cell"><span class="score-badge ${sb}">Score ${n}</span><div class="score-name">${rn[n-1]}</div></td>
-      <td class="crit-cell">${c}</td>
-      <td class="ev-cell"><ul>${ev.map(e=>`<li>${e}</li>`).join('')}</ul></td>
-    </tr>`;
+  [1,2,3,4].forEach(n=>{const c=q['c'+n]||'';const ev=(q['e'+n]||[]);
+    rows+=`<tr class="row-s${n}"><td class="score-cell"><span class="score-badge sb-${n}">Score ${n}</span><div class="score-name">${rn[n-1]}</div></td><td class="crit-cell">${c}</td><td class="ev-cell"><ul>${ev.map(e=>`<li>${e}</li>`).join('')}</ul></td></tr>`;
   });
-  // AI suggestion
+
   let suggHtml='';
-  if(sugg){
-    const sc2=sugg.score||'';
-    suggHtml=`<div class="ai-box">
-      <div class="ai-score-lbl">🤖 Suggests: <span style="color:${SCLR[sc2]||'#333'};font-weight:800">${sc2} — ${SL[sc2]||sc2}</span></div>
-      <div>${sugg.justification||''}</div>
-      ${sugg.key_gaps&&sugg.key_gaps.length?`<div class="ai-gaps">⚠ Gaps: ${sugg.key_gaps.join('; ')}</div>`:''}
-      ${sugg.recommendation?`<div class="ai-rec">→ ${sugg.recommendation}</div>`:''}
-      <div style="margin-top:6px;display:flex;gap:5px">
-        <button class="btn btn-sm btn-navy" onclick="acceptAI('${q.id}','${elId}','${sc2}')">✓ Accept ${sc2}</button>
-        <button class="btn btn-sm btn-outline" style="color:var(--muted);border-color:var(--border);background:#fff" onclick="document.getElementById('ai-out-${q.id}').innerHTML=''">Dismiss</button>
-      </div></div>`;
+  if(sugg){const sc2=sugg.score||'';
+    suggHtml=`<div class="ai-box"><div class="ai-score-lbl">🤖 Suggests: <span style="color:${SCLR[sc2]||'#333'};font-weight:800">${sc2} — ${SL[sc2]||sc2}</span></div><div>${sugg.justification||''}</div>${sugg.key_gaps&&sugg.key_gaps.length?`<div class="ai-gaps">⚠ Gaps: ${sugg.key_gaps.join('; ')}</div>`:''} ${sugg.recommendation?`<div class="ai-rec">→ ${sugg.recommendation}</div>`:''}
+    <div style="margin-top:6px;display:flex;gap:5px"><button class="btn btn-sm btn-navy" onclick="acceptAI('${q.id}','${elId}','${sc2}')">✓ Accept ${sc2}</button><button class="btn btn-sm btn-outline" style="color:var(--muted);border-color:var(--border);background:#fff" onclick="document.getElementById('ai-out-${q.id}').innerHTML=''">Dismiss</button></div></div>`;
   }
+
+  // Compliance + maturity dual-layer section (Detailed mode only)
+  const compSection = isDetailed ? `
+    <div style="padding:10px 16px 8px;border-top:2px solid var(--border);background:#f8fcff">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--s1);margin-bottom:7px">⚖️ COMPLIANCE (Regulatory Layer)</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        ${['Met','Partial','Not Met','N/A'].map(v=>`<button style="padding:4px 12px;border:2px solid var(--border);border-radius:14px;font-size:11px;font-weight:700;cursor:pointer;background:${compliance===v?(v==='Met'?'var(--s4)':v==='Partial'?'var(--s2)':v==='Not Met'?'var(--s1)':'var(--sna)'):'#f8f9fb'};color:${compliance===v?'#fff':'var(--muted)'};transition:all .12s" onclick="setCompliance('${q.id}','${v}','${elId}')">${v==='Met'?'✅ Met':v==='Partial'?'⚠ Partial':v==='Not Met'?'✗ Not Met':'— N/A'}</button>`).join('')}
+      </div>
+      ${(compliance==='Not Met'||compliance==='Partial')?`<div style="margin-top:8px;padding:8px 10px;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;font-size:11px;color:#856404">
+        <div style="font-weight:700;font-size:10px;text-transform:uppercase;margin-bottom:3px">📝 Draft Finding (CCPS Table 1.3 wording)</div>
+        <textarea id="fd-${q.id}" style="width:100%;height:56px;border:none;background:transparent;font-size:11px;font-family:inherit;resize:vertical" placeholder="We were unable to confirm that… Of the [N] records reviewed, [X] did not contain the provisions required by…">${((ST.docControl||{})['fd-'+q.id])||''}</textarea>
+      </div>`:''}
+    </div>
+    <div style="padding:8px 16px 12px;background:#fafbfd;border-top:1px solid var(--border)${compliance&&compliance!=='Met'&&compliance!=='N/A'?';opacity:.45;pointer-events:none':''}" id="mat-${q.id}">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--s3);margin-bottom:7px">📈 MATURITY / GOOD PRACTICE${compliance&&compliance!=='Met'&&compliance!=='N/A'?' (locked until Compliance = Met or N/A)':' (1–4 Scale)'}</div>
+      <div style="display:flex;gap:3px">${btns}</div>
+    </div>` : '';
+
   return `<div class="q-card ${cc}" id="qc-${q.id}">
     <div class="q-top">
       <span class="q-num">${q.id}</span>
@@ -402,26 +451,26 @@ function buildCard(q,elId){
       </div>
     </div>
     <div class="q-score-row">
-      <span class="q-score-lbl">Score:</span>
-      <div class="s-btns">${btns}</div>
+      ${!isDetailed?`<span class="q-score-lbl">Score:</span><div class="s-btns">${btns}</div>`:''}
       <button class="crit-toggle" onclick="togCrit('${q.id}')">📋 Scoring Guide & Evidence</button>
+      ${isDetailed?`<button style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:${ST.legalCheckActive?'#fff':'var(--mid)'};background:${ST.legalCheckActive?'linear-gradient(135deg,#7d3c98,#2e86ab)':'var(--pale)'};border:1px solid ${ST.legalCheckActive?'transparent':'#c7d4f0'};border-radius:10px;padding:3px 10px;cursor:pointer;font-weight:600" onclick="ST.legalCheckActive=!ST.legalCheckActive;save();showEl(${elId})">⚖ Legal ${ST.legalCheckActive?'ON':'OFF'}</button>`:''}
     </div>
     <div class="crit-panel" id="cp-${q.id}">
-      <table class="crit-tbl">
-        <thead><tr><th class="th-score">SCORE</th><th class="th-criteria">SCORING CRITERIA — WHAT THE AUDITOR SHOULD OBSERVE</th><th class="th-evidence">EVIDENCE TO EXAMINE</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <table class="crit-tbl"><thead><tr><th class="th-score">SCORE</th><th class="th-criteria">SCORING CRITERIA — WHAT THE AUDITOR SHOULD OBSERVE</th><th class="th-evidence">EVIDENCE TO EXAMINE</th></tr></thead>
+      <tbody>${rows}</tbody></table>
     </div>
+    ${isDetailed?compSection:''}
     <div class="q-body">
       <div class="q-body-row">
         <div class="notes-wrap">
           <label>Auditor Notes / Evidence Reviewed</label>
-          <textarea class="notes-ta" id="notes-${q.id}" placeholder="Describe findings, documents reviewed, field observations, interviews conducted…" onblur="setNotes('${q.id}')">${notes}</textarea>
+          <textarea class="notes-ta" id="notes-${q.id}" placeholder="Describe findings, documents reviewed, field observations, interviews conducted…" onblur="setNotes('${q.id}')" oninput="scanViolationsUI('${q.id}')">${notes}</textarea>
+          <div id="vwarn-${q.id}" style="display:none;background:var(--s1l);border:1px solid #f5b7b1;border-radius:6px;padding:7px 10px;margin-top:5px;font-size:11px;color:var(--s1)"></div>
         </div>
         <div class="ai-wrap">
           <label>AI Assistance</label>
           <button class="btn-ai" id="ai-btn-${q.id}" onclick="aiSuggest('${q.id}')">🤖 Suggest Score</button>
-          <button class="btn-rewrite" id="rw-btn-${q.id}" onclick="aiRewrite('${q.id}')">✍️ Rewrite Notes</button>
+          <button class="btn-rewrite" id="rw-btn-${q.id}" onclick="aiRewriteWithGuardrails('${q.id}')">✍️ ${ST.legalCheckActive?'⚖ Legal Rewrite':'Rewrite Notes'}</button>
           <div id="ai-out-${q.id}">${suggHtml}</div>
         </div>
       </div>
@@ -718,8 +767,536 @@ function importJSON(inp){const f=inp.files[0];if(!f)return;const r=new FileReade
   r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.scores)ST.scores=d.scores;if(d.notes)ST.notes=d.notes;if(d.facility)ST.facility=d.facility;if(d.mode)ST.mode=d.mode;save();showDash();updateModeUI();toast('Imported!','ok');}catch(err){toast('Import failed','err');}};r.readAsText(f);}
 function toast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'');requestAnimationFrame(()=>t.classList.add('show'));setTimeout(()=>t.classList.remove('show'),3200);}
 
-function init(){load();sidebar();updateModeUI();showDash();updateProg();if(!ST.facility.name)showSettings();}
+function init(){
+  load();
+  // Ensure new state fields exist
+  if(!ST.setup)ST.setup={auditId:'PSM-'+Date.now(),auditPurpose:'',regulatoryDrivers:[],representativeUnits:[],team:[],legalPrivilege:'None',priorCertDate:'',frameworkMode:'EI'};
+  if(ST.setupComplete===undefined)ST.setupComplete=false;
+  if(!ST.compliance)ST.compliance={};
+  if(!ST.interviews)ST.interviews=[];
+  if(!ST.meetings)ST.meetings=[];
+  if(!ST.actionItems)ST.actionItems=[];
+  if(!ST.docControl)ST.docControl={};
+  if(ST.legalCheckActive===undefined)ST.legalCheckActive=false;
+  sidebar();updateModeUI();
+  if(!ST.facility.name)showSettings();
+  else if(!ST.setupComplete)showSetup();
+  else showDash();
+  updateProg();
+}
 document.addEventListener('DOMContentLoaded',init);
+
+
+// ─── STATE SAVE/LOAD EXTENSION ────────────────────────────────────
+const _baseSave = save;
+function save(){
+  try{
+    const existing = JSON.parse(localStorage.getItem('psm25')||'{}');
+    existing.setup=ST.setup; existing.setupComplete=ST.setupComplete;
+    existing.compliance=ST.compliance; existing.interviews=ST.interviews;
+    existing.meetings=ST.meetings; existing.actionItems=ST.actionItems;
+    existing.docControl=ST.docControl; existing.legalCheckActive=ST.legalCheckActive;
+    // Also save scores/notes/mode from ST
+    existing.scores=ST.scores; existing.notes=ST.notes; existing.aiSugg=ST.aiSugg;
+    existing.facility=ST.facility; existing.apiKey=ST.apiKey;
+    existing.openaiKey=ST.openaiKey; existing.aiProvider=ST.aiProvider;
+    existing.mode=ST.mode; existing.report=ST.report;
+    localStorage.setItem('psm25', JSON.stringify(existing));
+  }catch(e){}
+}
+
+// ─── COMPLIANCE SCORING ───────────────────────────────────────────
+function setCompliance(qid, val, elId){
+  if(!ST.compliance)ST.compliance={};
+  ST.compliance[qid]=val;
+  save();
+  // Redraw the element to update UI
+  const cardEl=document.getElementById('qc-'+qid);
+  if(cardEl){
+    const matEl=document.getElementById('mat-'+qid);
+    if(matEl){
+      if(val==='Met'||val==='N/A'){matEl.style.opacity='1';matEl.style.pointerEvents='auto';}
+      else{matEl.style.opacity='0.4';matEl.style.pointerEvents='none';}
+    }
+    const fdEl=document.getElementById('fd-'+qid);
+    if(fdEl){
+      if(val==='Not Met'||val==='Partial'){fdEl.closest('[style*="fff3cd"]')&&(fdEl.closest('[style*="fff3cd"]').style.display='block');}
+    }
+    // Update compliance button colors
+    const btns=cardEl.querySelectorAll('[onclick*="setCompliance"]');
+    const colMap={'Met':'var(--s4)','Partial':'var(--s2)','Not Met':'var(--s1)','N/A':'var(--sna)'};
+    btns.forEach(b=>{
+      const bVal=b.textContent.replace('✅ ','').replace('⚠ ','').replace('✗ ','').replace('— ','').trim();
+      b.style.background=bVal===val?colMap[bVal]:'#f8f9fb';
+      b.style.color=bVal===val?'#fff':'var(--muted)';
+    });
+  }
+}
+
+// ─── VIOLATION SCANNER (CCPS Table 1.3) ──────────────────────────
+const PROHIBITED_PHRASES=[
+  {phrase:"the plant does not have",fix:'We were unable to confirm that'},
+  {phrase:"does not have a",fix:'We were unable to confirm that'},
+  {phrase:"is a violation of law",fix:'did not contain provisions required by'},
+  {phrase:"violates",fix:'did not contain provisions required by'},
+  {phrase:"was negligent",fix:'did not include the information required by'},
+  {phrase:"is negligent",fix:'did not include information required by'},
+  {phrase:"negligence",fix:'programme gap'},
+  {phrase:"it appears that",fix:'The audit team observed that'},
+  {phrase:"it appears ",fix:'The audit team observed '},
+  {phrase:"we think",fix:'The audit team observed that'},
+  {phrase:"we feel",fix:'The audit team noted that'},
+  {phrase:"we believe",fix:'The audit team determined that'},
+  {phrase:" very ",fix:' '},
+  {phrase:" extremely ",fix:' '},
+  {phrase:" incredibly ",fix:' '},
+  {phrase:"stupid",fix:'inadequate'},
+  {phrase:"awful",fix:'deficient'},
+  {phrase:"worst",fix:'significantly below expectations'},
+  {phrase:"understaffed",fix:'under-resourced'},
+  {phrase:"underfunded",fix:'under-resourced'}
+];
+function scanViolationsUI(qid){
+  const ta=document.getElementById('notes-'+qid);
+  const wbox=document.getElementById('vwarn-'+qid);
+  if(!ta||!wbox)return;
+  const lower=ta.value.toLowerCase();
+  const hits=PROHIBITED_PHRASES.filter(p=>lower.includes(p.phrase.toLowerCase()));
+  if(hits.length>0){
+    wbox.innerHTML=`<strong>⚖ CCPS Table 1.3 — ${hits.length} issue${hits.length>1?'s':''} found:</strong>${hits.map(h=>`<div style="margin-top:3px;font-size:10px">Remove "<em>${h.phrase}</em>" → Use: "${h.fix}"</div>`).join('')}`;
+    wbox.style.display='block';
+  } else {
+    wbox.style.display='none';
+    wbox.innerHTML='';
+  }
+}
+
+// ─── AI REWRITE WITH CCPS GUARDRAILS ────────────────────────────
+async function aiRewriteWithGuardrails(qid){
+  const prov=ST.aiProvider||'openai';const key=prov==='openai'?ST.openaiKey:ST.apiKey;
+  if(!key){showSettings();toast('Add your AI API key in Settings','err');return;}
+  const ta=document.getElementById('notes-'+qid);const notes=ta.value.trim();
+  if(!notes){toast('Enter audit notes first before rewriting','err');return;}
+  const btn=document.getElementById('rw-btn-'+qid);const out=document.getElementById('ai-out-'+qid);
+  btn.disabled=true;btn.textContent='🔄 Rewriting…';
+  const legalPrompt=ST.legalCheckActive?`You are a PSM audit report editor. Rewrite the following audit notes to comply with CCPS Guidelines Table 1.3 language rules:
+NEVER use: "The plant does not have…" → Use "We were unable to confirm that…"
+NEVER use: "…is a violation of law" → Use "…did not contain provisions required by…"
+NEVER use: "…was negligent" → Use "…did not include the information required by…"
+NEVER use: "It appears that…" → State the fact directly
+NEVER use: "We think / We feel / We believe" → Use "The audit team observed that…"
+NEVER use absolute terms without evidence, intensifiers (very/extremely), names of interviewees, speculation, colorful language, or staffing/budget blame.
+ALWAYS include sampling methodology ("Of 25 documents reviewed, 5 showed…")
+ALWAYS focus on systemic issues. Output ONLY the rewritten text.`
+  :`You are a professional process safety auditor. Rewrite raw field notes into formal, objective, professional audit report language. Keep all factual content. Use third-person ("The audit team observed…"). Keep to 50-120 words. Output ONLY the rewritten text.`;
+  try{
+    const rewritten=await callAI(legalPrompt+'\n\nRAW NOTES:\n'+notes,400);
+    ta.value=rewritten.trim();ST.notes[qid]=ta.value;save();scanViolationsUI(qid);
+    out.innerHTML=`<div class="rewrite-box">✍️ ${ST.legalCheckActive?'⚖ CCPS Table 1.3 rewrite applied.':'Notes rewritten professionally.'} Review and edit as needed.</div>`;
+    toast(ST.legalCheckActive?'CCPS legal wording applied!':'Notes rewritten!','ok');
+    setTimeout(()=>{const r=document.getElementById('ai-out-'+qid);if(r&&r.innerHTML.includes('rewrite-box'))r.innerHTML='';},5000);
+  }catch(e){out.innerHTML=`<div style="font-size:11px;color:var(--s1);padding:6px;background:#fdecea;border-radius:6px"><strong>Error:</strong> ${e.message}</div>`;toast(e.message.substring(0,50),'err');}
+  btn.disabled=false;btn.textContent=`✍️ ${ST.legalCheckActive?'⚖ Legal Rewrite':'Rewrite Notes'}`;
+}
+
+// ─── AUDIT SETUP WIZARD ───────────────────────────────────────────
+function showSetup(){
+  ST.view='setup';sidebar();
+  const s=ST.setup||{};
+  const purposes=['Regulatory Triennial (OSHA PSM / EPA RMP)','Post-Incident Review','Due Diligence (M&A)','Gap Analysis / Baseline','Internal Improvement Assessment','Certification (RCMS / ISO 45001)'];
+  const regs=['OSHA PSM (29 CFR 1910.119)','EPA RMP (40 CFR 68)','CalARP / CalOSHA','NJ TCPA','Seveso III (EU)','SEMP / API RP 75 (Offshore)','EI Framework','Company-Specific','None (Voluntary)'];
+  const isComplete=s.auditPurpose&&(s.regulatoryDrivers||[]).length>0&&(s.representativeUnits||[]).length>0&&(s.team||[]).length>0;
+  if(isComplete!==ST.setupComplete){ST.setupComplete=isComplete;save();sidebar();}
+  const banner=isComplete
+    ?`<div style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px;font-size:13px;color:#1e8449">✅ <strong>Audit Setup Complete</strong> — You may now access the scoring interface for all 20 elements.</div>`
+    :`<div style="background:var(--s1l);border:1px solid #f5b7b1;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:var(--s1)">⚠️ <strong>Audit Setup Incomplete</strong> — Complete all required fields (*) before scoring. Required: Audit Purpose, at least one Regulatory Driver, one Representative Unit, and one Team Member.</div>`;
+
+  const purposeOpts=purposes.map(p=>`<option value="${p}"${s.auditPurpose===p?' selected':''}>${p}</option>`).join('');
+  const privOpts=['None','Attorney-Client Privilege','Work Product','OSHA Voluntary Self-Audit Policy'].map(p=>`<option value="${p}"${(s.legalPrivilege||'None')===p?' selected':''}>${p}</option>`).join('');
+  const regChecks=regs.map(r=>`<label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;background:${(s.regulatoryDrivers||[]).includes(r)?'var(--blue-light)':'#f0f4f8'};border:1px solid ${(s.regulatoryDrivers||[]).includes(r)?'var(--mid)':'var(--border)'};padding:4px 10px;border-radius:12px;cursor:pointer;margin:3px"><input type="checkbox"${(s.regulatoryDrivers||[]).includes(r)?' checked':''} onchange="toggleSetupReg('${r.replace(/'/g,"\\'")}')"><span>${r}</span></label>`).join('');
+
+  const unitsRows=(s.representativeUnits||[]).length===0
+    ?`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:12px">No units added. Click "Add Unit".</td></tr>`
+    :(s.representativeUnits||[]).map((u,i)=>`<tr>
+        <td><input style="width:110px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px" value="${u.name||''}" onchange="updateSetupUnit(${i},'name',this.value)" placeholder="Unit name"></td>
+        <td><select style="font-size:12px;padding:4px" onchange="updateSetupUnit(${i},'risk',this.value)"><option${(u.risk||'High')==='High'?' selected':''}>High</option><option${u.risk==='Medium'?' selected':''}>Medium</option><option${u.risk==='Low'?' selected':''}>Low</option></select></td>
+        <td><input style="width:55px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px" value="${u.age||''}" placeholder="yrs" onchange="updateSetupUnit(${i},'age',this.value)"></td>
+        <td><input style="width:90px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px" value="${u.lastAudit||''}" placeholder="date" onchange="updateSetupUnit(${i},'lastAudit',this.value)"></td>
+        <td><button onclick="removeSetupUnit(${i})" style="background:none;border:none;color:var(--s1);cursor:pointer;font-size:14px">✕</button></td>
+      </tr>`).join('');
+
+  const teamRows=(s.team||[]).length===0
+    ?`<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:12px">No team members added. Click "Add Team Member".</td></tr>`
+    :(s.team||[]).map((m,i)=>`<tr>
+        <td><input style="width:100px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px" value="${m.name||''}" onchange="updateSetupTeam(${i},'name',this.value)"></td>
+        <td><input style="width:120px;padding:4px 7px;border:1px solid var(--border);border-radius:5px;font-size:12px" value="${m.role||''}" placeholder="Role / expertise" onchange="updateSetupTeam(${i},'role',this.value)"></td>
+        <td><select style="font-size:12px;padding:4px" onchange="updateSetupTeam(${i},'objectivity',this.value)"><option${(m.objectivity||'Second-party')==='First-party'?' selected':''}>First-party</option><option${(m.objectivity||'Second-party')==='Second-party'?' selected':''}>Second-party</option><option${m.objectivity==='Third-party'?' selected':''}>Third-party</option></select></td>
+        <td style="text-align:center"><label style="font-size:11px;display:flex;align-items:center;gap:4px;justify-content:center"><input type="checkbox"${m.coiCleared?' checked':''} onchange="updateSetupTeam(${i},'coiCleared',this.checked)"> Cleared</label></td>
+        <td><button onclick="removeSetupTeam(${i})" style="background:none;border:none;color:var(--s1);cursor:pointer;font-size:14px">✕</button></td>
+      </tr>`).join('');
+
+  const tdStyle="padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle";
+  const thStyle="background:var(--navy);color:#fff;padding:7px 10px;text-align:left;font-size:11px";
+
+  document.getElementById('content').innerHTML=`<div style="padding:24px 28px;max-width:900px">
+    <div style="margin-bottom:18px"><h2 style="font-size:20px;font-weight:700;color:var(--navy)">🎯 Audit Setup Wizard</h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:3px">CCPS §2.1 — Pre-Audit Planning. Complete all sections before accessing the scoring interface.</p></div>
+    ${banner}
+
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+      <h3 style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:14px">📋 Audit Programme Information</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Audit ID</label>
+          <input style="padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px" value="${s.auditId||('PSM-'+Date.now())}" onchange="ST.setup.auditId=this.value;save()">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Audit Purpose <span style="color:var(--s1)">*</span></label>
+          <select style="padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px" onchange="ST.setup.auditPurpose=this.value;save();showSetup()">
+            <option value="">— Select Purpose —</option>${purposeOpts}
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Legal Privilege</label>
+          <select style="padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px" onchange="ST.setup.legalPrivilege=this.value;save();showSetup()">
+            ${privOpts}
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">Prior Certification Date (for triennial tracking)</label>
+          <input type="date" style="padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px" value="${s.priorCertDate||''}" onchange="ST.setup.priorCertDate=this.value;save();showSetup()">
+        </div>
+      </div>
+      ${s.priorCertDate?`<div style="margin-top:10px;padding:8px 12px;background:#eaf4fb;border-radius:6px;font-size:12px;color:#1a5276">📅 Prior certification: <strong>${s.priorCertDate}</strong> &nbsp;|&nbsp; Next OSHA PSM / EPA RMP deadline: <strong>${new Date(new Date(s.priorCertDate+'T00:00:00').setFullYear(new Date(s.priorCertDate+'T00:00:00').getFullYear()+3)).toISOString().split('T')[0]}</strong></div>`:''}
+      ${s.legalPrivilege&&s.legalPrivilege!=='None'?`<div style="margin-top:10px;padding:10px 12px;background:#f0eaff;border:1px solid #c5aae8;border-radius:6px;font-size:12px;color:#333">⚖️ <strong>Legal Privilege Active: ${s.legalPrivilege}</strong><br>Distribution must be restricted per counsel instructions. Draft worksheets must be destroyed after final report per CCPS §1.8.4.</div>`:''}
+    </div>
+
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+      <h3 style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px">⚖️ Regulatory Drivers <span style="color:var(--s1)">*</span></h3>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${regChecks}</div>
+    </div>
+
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+      <h3 style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px">🏭 Representative Units <span style="color:var(--s1)">*</span></h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">CCPS §2.1.2.2 — Select 2–4 units based on risk level, age, and incident history.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr><th style="${thStyle}">Unit Name</th><th style="${thStyle}">Risk Level</th><th style="${thStyle}">Age (yrs)</th><th style="${thStyle}">Last Audited</th><th style="${thStyle}"></th></tr></thead>
+        <tbody id="units-tbody">${unitsRows}</tbody>
+      </table>
+      <button onclick="addSetupUnit()" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--mid);background:var(--pale);border:1px dashed var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;margin-top:8px">+ Add Representative Unit</button>
+    </div>
+
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+      <h3 style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px">👥 Audit Team Composition <span style="color:var(--s1)">*</span></h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">CCPS §1.5 — No auditor should audit their own programme. Conflict of interest check required.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr><th style="${thStyle}">Name</th><th style="${thStyle}">Role / Expertise</th><th style="${thStyle}">Objectivity</th><th style="${thStyle}">COI Check</th><th style="${thStyle}"></th></tr></thead>
+        <tbody id="team-tbody">${teamRows}</tbody>
+      </table>
+      <button onclick="addSetupTeam()" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--mid);background:var(--pale);border:1px dashed var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;margin-top:8px">+ Add Team Member</button>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-orange" onclick="saveAndCompleteSetup()">${isComplete?'✅ Update Setup':'🎯 Complete Setup & Begin Audit'}</button>
+      ${isComplete?`<button class="btn btn-green" onclick="showDash()">→ Go to Dashboard</button>`:''}
+    </div>
+  </div>`;
+  updateProg();
+}
+
+function toggleSetupReg(r){
+  if(!ST.setup.regulatoryDrivers)ST.setup.regulatoryDrivers=[];
+  if(ST.setup.regulatoryDrivers.includes(r))ST.setup.regulatoryDrivers=ST.setup.regulatoryDrivers.filter(x=>x!==r);
+  else ST.setup.regulatoryDrivers.push(r);
+  save();
+}
+function addSetupUnit(){if(!ST.setup.representativeUnits)ST.setup.representativeUnits=[];ST.setup.representativeUnits.push({name:'',risk:'High',age:'',lastAudit:''});save();showSetup();}
+function removeSetupUnit(i){ST.setup.representativeUnits.splice(i,1);save();showSetup();}
+function updateSetupUnit(i,k,v){if(!ST.setup.representativeUnits)ST.setup.representativeUnits=[];ST.setup.representativeUnits[i][k]=v;save();}
+function addSetupTeam(){if(!ST.setup.team)ST.setup.team=[];ST.setup.team.push({name:'',role:'',objectivity:'Second-party',coiCleared:false});save();showSetup();}
+function removeSetupTeam(i){ST.setup.team.splice(i,1);save();showSetup();}
+function updateSetupTeam(i,k,v){if(!ST.setup.team)ST.setup.team=[];ST.setup.team[i][k]=v;save();}
+function saveAndCompleteSetup(){
+  const s=ST.setup;
+  if(!s.auditPurpose||(s.regulatoryDrivers||[]).length===0||(s.representativeUnits||[]).length===0||(s.team||[]).length===0){
+    toast('Please complete all required fields (marked with *) before proceeding.','err');return;
+  }
+  ST.setupComplete=true;save();sidebar();showSetup();
+  toast('Audit setup complete! You can now score all 20 elements.','ok');
+}
+
+// ─── INTERVIEW PLANNER ────────────────────────────────────────────
+function showInterviews(){
+  ST.view='interviews';sidebar();
+  const ivs=ST.interviews||[];
+  const rows=ivs.length===0
+    ?`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">No interviews planned. Click "+ Add Interview".</td></tr>`
+    :ivs.map((iv,i)=>{
+      const statusColors={'Scheduled':'#eaf4fb;color:#1a5276','Completed':'var(--s4l);color:var(--s4)','Cancelled':'var(--snal);color:var(--sna)'};
+      const sc=statusColors[iv.status||'Scheduled']||statusColors['Scheduled'];
+      return `<tr>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--border)"><strong>INT-${String(i+1).padStart(3,'0')}</strong></td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--border)">${iv.confidential&&!iv.isManagement?'[Confidential]':iv.interviewee} ${iv.confidential?'<span style="background:#fef5ec;color:var(--s2);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700">CONF</span>':''}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--border)">${iv.position||'—'}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--border)">${(iv.elements||[]).join(', ')||'—'}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--border)">${iv.date||'—'}</td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--border)"><span style="background:${sc};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">${iv.status||'Scheduled'}</span></td>
+        <td style="padding:7px 10px;border-bottom:1px solid var(--border)">
+          <button class="btn btn-sm btn-navy" onclick="editInterviewModal(${i})">Edit</button>
+          <button class="btn btn-sm" style="color:var(--s1)" onclick="deleteInterview(${i})">✕</button>
+        </td>
+      </tr>`;}).join('');
+
+  const thS="background:var(--navy);color:#fff;padding:7px 10px;text-align:left;font-size:11px";
+  document.getElementById('content').innerHTML=`<div style="padding:24px 28px;max-width:1000px">
+    <div style="margin-bottom:18px"><h2 style="font-size:20px;font-weight:700;color:var(--navy)">👥 Interview Planner</h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:3px">CCPS §2.3.2 — Plan and track all audit interviews</p></div>
+
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+      <h3 style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px">📌 Interview Protocol (CCPS §2.3.2)</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#eafaf1;border-radius:8px;padding:10px;font-size:11px;line-height:1.8"><strong style="color:var(--s4)">✅ DO:</strong> Introduce yourself • Ask open-ended questions first • Use scenario probes • Practice active listening • Use handwritten or typed notes only • Conduct in worker's environment (non-mgmt)</div>
+        <div style="background:var(--s1l);border-radius:8px;padding:10px;font-size:11px;line-height:1.8"><strong style="color:var(--s1)">❌ DON'T:</strong> Tape record or video • Take verbatim notes • Use leading questions • Include names in report findings • Have supervisor present • Exceed time without consent</div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:13px;color:var(--muted)">${ivs.length} interview${ivs.length!==1?'s':''} planned &nbsp;|&nbsp; ${ivs.filter(i=>i.status==='Completed').length} completed</span>
+      <button class="btn btn-orange btn-sm" onclick="editInterviewModal()">+ Add Interview</button>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr><th style="${thS}">ID</th><th style="${thS}">Interviewee</th><th style="${thS}">Position</th><th style="${thS}">Elements</th><th style="${thS}">Date</th><th style="${thS}">Status</th><th style="${thS}">Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="overlay" id="iv-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center">
+    <div id="iv-modal-inner" style="background:#fff;border-radius:12px;padding:26px;max-width:560px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)"></div>
+  </div>`;
+  updateProg();
+}
+function editInterviewModal(idx){
+  const iv=idx!==undefined?(ST.interviews||[])[idx]:{interviewee:'',position:'',shift:'Day',isManagement:false,confidential:true,elements:[],date:'',duration:45,status:'Scheduled',notes:'',questions:''};
+  const elOpts=ELEMENTS.map(e=>`<option value="E${e.id}"${(iv.elements||[]).includes('E'+e.id)?' selected':''}>E${e.id}: ${e.title}</option>`).join('');
+  const modal=document.getElementById('iv-modal');
+  document.getElementById('iv-modal-inner').innerHTML=`
+    <h2 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:14px">${idx!==undefined?'Edit':'Add'} Interview</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="fg"><label>Interviewee Name</label><input id="iv-name" value="${iv.interviewee||''}" placeholder="Leave blank for anonymity"></div>
+      <div class="fg"><label>Position / Title</label><input id="iv-pos" value="${iv.position||''}" placeholder="e.g. Shift Supervisor"></div>
+      <div class="fg"><label>Shift</label><select id="iv-shift"><option${(iv.shift||'Day')==='Day'?' selected':''}>Day</option><option${iv.shift==='Afternoon'?' selected':''}>Afternoon</option><option${iv.shift==='Night'?' selected':''}>Night</option><option${iv.shift==='Rotating'?' selected':''}>Rotating</option></select></div>
+      <div class="fg"><label>Date</label><input id="iv-date" type="date" value="${iv.date||''}"></div>
+      <div class="fg"><label>Duration (min)</label><input id="iv-dur" type="number" value="${iv.duration||45}" min="15" max="180"></div>
+      <div class="fg"><label>Status</label><select id="iv-status"><option${(iv.status||'Scheduled')==='Scheduled'?' selected':''}>Scheduled</option><option${iv.status==='Completed'?' selected':''}>Completed</option><option${iv.status==='Cancelled'?' selected':''}>Cancelled</option></select></div>
+    </div>
+    <div class="fg" style="margin-bottom:10px"><label>PSM Elements (hold Ctrl/Cmd to multi-select)</label><select id="iv-els" multiple style="height:80px">${elOpts}</select></div>
+    <div style="display:flex;gap:16px;margin-bottom:12px">
+      <label style="font-size:13px;display:flex;align-items:center;gap:6px"><input id="iv-mgmt" type="checkbox"${iv.isManagement?' checked':''}> Management interview</label>
+      <label style="font-size:13px;display:flex;align-items:center;gap:6px"><input id="iv-conf" type="checkbox"${iv.confidential!==false?' checked':''}> Confidential (exclude name from report)</label>
+    </div>
+    <div class="fg" style="margin-bottom:10px"><label>Scenario-Based Probe Questions</label><textarea id="iv-q" style="height:65px" placeholder="e.g. It's 2:00 AM on a Saturday and a replacement-in-kind part is not available. What do you do?">${iv.questions||''}</textarea></div>
+    <div class="fg" style="margin-bottom:14px"><label>Interview Notes</label><textarea id="iv-notes" style="height:75px" placeholder="Key responses, documents reviewed, follow-up needed…">${iv.notes||''}</textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('iv-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-orange" onclick="saveInterview(${idx})">Save Interview</button>
+    </div>`;
+  modal.style.display='flex';
+}
+function saveInterview(idx){
+  const els=Array.from(document.getElementById('iv-els').selectedOptions).map(o=>o.value);
+  const iv={interviewee:document.getElementById('iv-name').value,position:document.getElementById('iv-pos').value,shift:document.getElementById('iv-shift').value,date:document.getElementById('iv-date').value,duration:parseInt(document.getElementById('iv-dur').value)||45,status:document.getElementById('iv-status').value,elements:els,isManagement:document.getElementById('iv-mgmt').checked,confidential:document.getElementById('iv-conf').checked,questions:document.getElementById('iv-q').value,notes:document.getElementById('iv-notes').value};
+  if(!ST.interviews)ST.interviews=[];
+  if(idx!==undefined)ST.interviews[idx]=iv;else ST.interviews.push(iv);
+  save();document.getElementById('iv-modal').style.display='none';showInterviews();toast('Interview saved!','ok');
+}
+function deleteInterview(i){if(!confirm('Delete this interview record?'))return;(ST.interviews||[]).splice(i,1);save();showInterviews();}
+
+// ─── DAILY MEETINGS ───────────────────────────────────────────────
+function showMeetings(){
+  ST.view='meetings';sidebar();
+  const tab=ST._meetingTab||'team';
+  const today=new Date().toISOString().split('T')[0];
+  const tabs=['team','facility','closing'].map(t=>`<button onclick="ST._meetingTab='${t}';showMeetings()" style="padding:8px 18px;border:2px solid ${tab===t?'var(--orange)':'var(--border)'};border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:${tab===t?'var(--orange)':'var(--muted)'};background:${tab===t?'rgba(232,96,10,.06)':'#fff'}">${t==='team'?'🔒 Team Debrief':t==='facility'?'🏭 Facility Meeting':'🎤 Closing Meeting'}</button>`).join('');
+  const checks1=['Preliminary findings reviewed — team consensus reached','Evidence vetted (documents, records, field observations confirmed)','Facility presentation prepared — no surprises for facility','Tomorrow\'s interview schedule and agenda confirmed','Follow-up document requests identified','Any immediate action items communicated to facility?'];
+  const checks2=['Audit activities conducted today summarised','Vetted preliminary findings shared ("no surprises" principle maintained)','Facility redirects and clarification requests noted','Additional document requests confirmed','Tomorrow\'s schedule and interview plan confirmed','Questions from facility recorded'];
+
+  let content='';
+  if(tab==='team'){
+    content=`<h3 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:12px">🔒 Audit Team Daily Debrief (Private)</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Attendees: Audit team only. Duration: 30–60 min. Purpose: Review preliminary findings before presenting to facility.</p>
+    <ul style="list-style:none;padding:0">${checks1.map((c,i)=>`<li style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><input type="checkbox"${(ST.meetings||[]).some(m=>m.type==='tc'+i&&m.checked)?' checked':''} style="width:16px;height:16px;margin-top:2px;accent-color:var(--orange)" onchange="saveMeetCheck('tc${i}',this.checked)"><span>${c}</span></li>`).join('')}</ul>
+    <div class="fg" style="margin-top:12px"><label>Team Debrief Notes (Private — not for report)</label><textarea style="width:100%;height:90px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit" placeholder="Preliminary findings, evidence gaps, items to follow up, team assignments for tomorrow…" onblur="saveMeetNote('team-notes',this.value)">${(ST.meetings||[]).find(m=>m.type==='team-notes')?.text||''}</textarea></div>
+    <button class="btn btn-orange btn-sm" style="margin-top:10px" onclick="toast('Team debrief saved','ok')">Save Debrief Notes</button>`;
+  } else if(tab==='facility'){
+    content=`<h3 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:12px">🏭 Daily Facility Meeting</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Attendees: Audit team + Facility PSM coordinator. Duration: 30 min max. Purpose: Share vetted preliminary findings ("no surprises").</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="fg"><label>Date</label><input type="date" value="${today}"></div>
+      <div class="fg"><label>Attendees</label><input placeholder="PSM Coordinator, Operations Manager…" value="${(ST.meetings||[]).find(m=>m.type==='fac-att')?.text||''}" onblur="saveMeetNote('fac-att',this.value)"></div>
+    </div>
+    <ul style="list-style:none;padding:0">${checks2.map((c,i)=>`<li style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><input type="checkbox"${(ST.meetings||[]).some(m=>m.type==='fc'+i&&m.checked)?' checked':''} style="width:16px;height:16px;margin-top:2px;accent-color:var(--orange)" onchange="saveMeetCheck('fc${i}',this.checked)"><span>${c}</span></li>`).join('')}</ul>
+    <div class="fg" style="margin-top:12px"><label>Facility Redirects / Additional Requests</label><textarea style="width:100%;height:65px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit" placeholder="Document requests, access requests, interviewee changes…" onblur="saveMeetNote('fac-redirects',this.value)">${(ST.meetings||[]).find(m=>m.type==='fac-redirects')?.text||''}</textarea></div>
+    <div class="fg" style="margin-top:10px"><label>Tomorrow's Confirmed Schedule</label><textarea style="width:100%;height:60px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit" placeholder="08:00 — Interview: Operations Supervisor (E12 MOC)…" onblur="saveMeetNote('fac-tomorrow',this.value)">${(ST.meetings||[]).find(m=>m.type==='fac-tomorrow')?.text||''}</textarea></div>
+    <button class="btn btn-orange btn-sm" style="margin-top:10px" onclick="toast('Facility meeting saved','ok')">Save Meeting Notes</button>`;
+  } else {
+    const topFindings=ELEMENTS.map(el=>{const qs=elQs(el);const bad=qs.filter(q=>(ST.compliance||{})[q.id]==='Not Met'||(ST.compliance||{})[q.id]==='Partial'||ST.scores[q.id]==='1'||ST.scores[q.id]==='2');return bad.length>0?`<li style="margin-bottom:4px"><strong>E${el.id} ${el.title}:</strong> ${bad.length} finding${bad.length>1?'s':''}</li>`:null;}).filter(Boolean).join('')||'<li style="color:var(--muted)">No findings recorded yet — complete scoring first.</li>';
+    content=`<h3 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:12px">🎤 Closing Meeting Agenda</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">CCPS §2.2.3 — Facility manager attendance required. Duration: 60–90 min. Present final vetted findings only.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="fg"><label>Closing Meeting Date</label><input type="date" value="${today}"></div>
+      <div class="fg"><label>Facility Manager Present</label><select><option>Yes — confirmed</option><option>No — Designee attending</option></select></div>
+    </div>
+    <h4 style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px">Findings Summary (auto-populated from scoring)</h4>
+    <ul style="padding-left:16px;font-size:12px;line-height:1.9">${topFindings}</ul>
+    <div class="fg" style="margin-top:12px"><label>Positive Results / Strengths Observed</label><textarea style="width:100%;height:65px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit" placeholder="Elements scoring 3 or 4 — highlight genuine strengths to maintain balance…"></textarea></div>
+    <div class="fg" style="margin-top:10px"><label>Report Timeline</label><input placeholder="e.g. Draft report within 15 business days; final within 30 days of comments"></div>`;
+  }
+
+  document.getElementById('content').innerHTML=`<div style="padding:24px 28px;max-width:900px">
+    <div style="margin-bottom:18px"><h2 style="font-size:20px;font-weight:700;color:var(--navy)">📅 Daily Meetings</h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:3px">CCPS §2.2 — Structured daily workflow templates</p></div>
+    <div style="display:flex;gap:4px;margin-bottom:18px">${tabs}</div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.05)">${content}</div>
+  </div>`;
+  updateProg();
+}
+function saveMeetCheck(type,checked){if(!ST.meetings)ST.meetings=[];ST.meetings=ST.meetings.filter(m=>m.type!==type);if(checked)ST.meetings.push({type,checked});save();}
+function saveMeetNote(type,text){if(!ST.meetings)ST.meetings=[];ST.meetings=ST.meetings.filter(m=>m.type!==type);ST.meetings.push({type,text});save();}
+
+// ─── ACTION ITEM TRACKER ──────────────────────────────────────────
+function showActions(){
+  ST.view='actions';sidebar();
+  const items=ST.actionItems||[];
+  const overdueCount=items.filter(a=>a.dueDate&&new Date(a.dueDate)<new Date()&&a.status!=='Complete').length;
+  const thS="background:var(--navy);color:#fff;padding:7px 10px;text-align:left;font-size:11px";
+  const tdS="padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle";
+  const rows=items.length===0
+    ?`<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">No action items yet. Add items based on audit findings.</td></tr>`
+    :items.map((a,i)=>{
+      const isOverdue=a.dueDate&&new Date(a.dueDate)<new Date()&&a.status!=='Complete';
+      const statusColor=isOverdue?'color:#fff;background:var(--s1)':a.status==='Complete'?'color:var(--s4);background:var(--s4l)':a.status==='Pending'?'color:var(--s2);background:var(--s2l)':'color:var(--s1);background:var(--s1l)';
+      const priColor=a.priority==='High'?'color:var(--s1);background:var(--s1l)':a.priority==='Low'?'color:var(--s3);background:var(--s3l)':'color:var(--s2);background:var(--s2l)';
+      return `<tr>
+        <td style="${tdS}"><strong>F-${String(i+1).padStart(3,'0')}</strong>${a.isRepeat?'<span style="margin-left:4px;background:#fff3cd;color:#856404;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700" title="Potential repeat finding">🔄</span>':''}</td>
+        <td style="${tdS};max-width:200px;font-size:12px">${a.description||'—'}</td>
+        <td style="${tdS}"><span style="${priColor};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">${a.priority||'Med'}</span></td>
+        <td style="${tdS};font-size:12px">${a.owner||'—'}</td>
+        <td style="${tdS};font-size:12px">${a.dueDate||'—'}</td>
+        <td style="${tdS}"><span style="${statusColor};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">${isOverdue?'OVERDUE':a.status||'Open'}</span></td>
+        <td style="${tdS}"><button class="btn btn-sm btn-navy" onclick="editActionModal(${i})">Edit</button> <button class="btn btn-sm" style="color:var(--s1)" onclick="deleteAction(${i})">✕</button></td>
+      </tr>`;}).join('');
+
+  document.getElementById('content').innerHTML=`<div style="padding:24px 28px;max-width:1000px">
+    <div style="margin-bottom:18px">
+      <h2 style="font-size:20px;font-weight:700;color:var(--navy)">✅ Action Item Tracker ${overdueCount>0?`<span style="display:inline-flex;align-items:center;justify-content:center;background:var(--s1);color:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;font-weight:800;margin-left:6px">${overdueCount}</span>`:''}
+      </h2>
+      <p style="font-size:12px;color:var(--muted);margin-top:3px">CCPS §1.9 — Track findings from identification through verified completion</p>
+    </div>
+    ${overdueCount>0?`<div style="background:var(--s1l);border:1px solid #f5b7b1;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--s1)">⚠️ <strong>${overdueCount} action item${overdueCount>1?'s are':' is'} overdue.</strong> Escalation to management required per CCPS §1.9.</div>`:''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:13px;color:var(--muted)">${items.length} total &nbsp;|&nbsp; ${items.filter(a=>a.status==='Open').length} Open &nbsp;|&nbsp; ${items.filter(a=>a.status==='Complete').length} Complete</span>
+      <button class="btn btn-orange btn-sm" onclick="editActionModal()">+ Add Action Item</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr><th style="${thS}">Finding ID</th><th style="${thS}">Description</th><th style="${thS}">Priority</th><th style="${thS}">Owner</th><th style="${thS}">Due Date</th><th style="${thS}">Status</th><th style="${thS}">Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:18px;padding:14px;background:#f8f9fb;border:1px solid var(--border);border-radius:8px;font-size:12px">
+      <strong>CCPS §1.9 Requirements:</strong> Named owner (not department) · Timely completion commensurate with risk · Rejection must be on reasonable, defensible grounds — <em>not solely on cost</em> · Escalate if risk-related and reviewers disagree
+    </div>
+  </div>
+  <div id="action-modal" class="overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center">
+    <div id="action-modal-inner" style="background:#fff;border-radius:12px;padding:26px;max-width:500px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)"></div>
+  </div>`;
+  updateProg();
+}
+function editActionModal(idx){
+  const a=idx!==undefined?(ST.actionItems||[])[idx]:{description:'',priority:'Medium',owner:'',dueDate:'',status:'Open',resolution:'',isRepeat:false};
+  document.getElementById('action-modal-inner').innerHTML=`
+    <h2 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:14px">Action Item ${idx!==undefined?'F-'+String(idx+1).padStart(3,'0'):'(New)'}</h2>
+    <div class="fg"><label>Finding Description</label><textarea id="ai-desc" style="height:70px">${a.description||''}</textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="fg"><label>Priority</label><select id="ai-pri"><option${(a.priority||'Medium')==='High'?' selected':''}>High</option><option${(a.priority||'Medium')==='Medium'?' selected':''}>Medium</option><option${a.priority==='Low'?' selected':''}>Low</option></select></div>
+      <div class="fg"><label>Status</label><select id="ai-stat"><option${(a.status||'Open')==='Open'?' selected':''}>Open</option><option${a.status==='Pending'?' selected':''}>Pending</option><option${a.status==='Complete'?' selected':''}>Complete</option><option${a.status==='Rejected'?' selected':''}>Rejected</option></select></div>
+      <div class="fg"><label>Named Owner</label><input id="ai-own" value="${a.owner||''}" placeholder="Individual name (not department)"></div>
+      <div class="fg"><label>Due Date</label><input id="ai-due" type="date" value="${a.dueDate||''}"></div>
+    </div>
+    <div class="fg"><label>Resolution / Rationale</label><textarea id="ai-res" style="height:55px" placeholder="If Rejected: state reasonable, defensible grounds (not solely cost-based).">${a.resolution||''}</textarea></div>
+    <label style="font-size:13px;display:flex;align-items:center;gap:7px;margin-bottom:14px"><input id="ai-rep" type="checkbox"${a.isRepeat?' checked':''}> 🔄 Potential repeat finding from prior audit</label>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('action-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-orange" onclick="saveActionItem(${idx})">Save</button>
+    </div>`;
+  document.getElementById('action-modal').style.display='flex';
+}
+function saveActionItem(i){
+  if(!ST.actionItems)ST.actionItems=[];
+  const item={description:document.getElementById('ai-desc').value,priority:document.getElementById('ai-pri').value,status:document.getElementById('ai-stat').value,owner:document.getElementById('ai-own').value,dueDate:document.getElementById('ai-due').value,resolution:document.getElementById('ai-res').value,isRepeat:document.getElementById('ai-rep').checked};
+  if(i!==undefined)ST.actionItems[i]=item;else ST.actionItems.push(item);
+  save();document.getElementById('action-modal').style.display='none';showActions();toast('Action item saved!','ok');
+}
+function deleteAction(i){if(!confirm('Delete this action item?'))return;(ST.actionItems||[]).splice(i,1);save();showActions();}
+
+// ─── DOCUMENT CONTROL / CLOSE-OUT ────────────────────────────────
+function showDocControl(){
+  ST.view='doccontrol';sidebar();
+  const dc=ST.docControl||{};
+  const auditChecks=['All elements in scope have been scored','All required interviews completed per sampling plan','Field observations logged and signed off by audit team','Team consensus reached on all findings presented','Facility closing meeting completed successfully','Report timeline communicated to facility contact','Action item register handed to facility PSM coordinator','Verification audit trigger date agreed (12 months or 80% closure, whichever is first)'];
+  const retain=['Final audit report (retain at minimum 2 most recent for OSHA PSM compliance)','Certification page (signed and dated)','Action plan and corrective action tracking records','Sampling and testing plan (if included in final report)','Interview list with element coverage (names redacted for non-management)'];
+  const destroy=['Draft worksheets and mark-ups (shred or securely delete)','Interview notes and handwritten field notes','Working papers and internal audit team correspondence','All draft report versions and review copies','Electronic files, emails, and cloud backups of temporary documents','Blank unused worksheets and templates from this audit'];
+
+  const auditDone=auditChecks.every((a,i)=>dc['ack-'+i]);
+  const retainDone=retain.every((r,i)=>dc['ret-'+i]);
+  const destroyDone=destroy.every((d,i)=>dc['des-'+i]);
+  const canClose=auditDone&&retainDone&&destroyDone;
+
+  const mkCheck=(type,items,border)=>items.map((item,i)=>`<li style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;border-left:4px solid ${border};padding-left:8px"><input type="checkbox"${dc[type+i]?' checked':''} style="width:18px;height:18px;margin-top:1px;accent-color:var(--orange)" onchange="ST.docControl['${type}'+${i}]=this.checked;save();showDocControl()"><span>${item}</span></li>`).join('');
+
+  document.getElementById('content').innerHTML=`<div style="padding:24px 28px;max-width:900px">
+    <div style="margin-bottom:18px"><h2 style="font-size:20px;font-weight:700;color:var(--navy)">🔒 Audit Close-Out & Document Control</h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:3px">CCPS §1.8.4 — All items must be checked before marking this audit as Closed</p></div>
+
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+      <h3 style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px">✅ Audit Completion Checklist</h3>
+      <ul style="list-style:none;padding:0">${mkCheck('ack-',auditChecks,'var(--orange)')}</ul>
+    </div>
+
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+      <h3 style="font-size:14px;font-weight:700;color:var(--s4);margin-bottom:10px">📁 Documents to RETAIN</h3>
+      <ul style="list-style:none;padding:0">${mkCheck('ret-',retain,'var(--s4)')}</ul>
+    </div>
+
+    <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+      <h3 style="font-size:14px;font-weight:700;color:var(--s1);margin-bottom:6px">🗑️ Documents to DESTROY after Final Report</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Exception: Retain if subject to subpoena or legal hold. Shred physical copies; securely wipe electronic media.</p>
+      <ul style="list-style:none;padding:0">${mkCheck('des-',destroy,'var(--s1)')}</ul>
+    </div>
+
+    ${(ST.setup||{}).legalPrivilege&&ST.setup.legalPrivilege!=='None'?`<div style="background:#f0eaff;border:1px solid #c5aae8;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px">⚖️ <strong>Legal Privilege Active: ${ST.setup.legalPrivilege}</strong><br>Before closing, confirm: (1) Distribution list approved by counsel; (2) All copies marked with privilege annotation; (3) No copies sent outside privileged communication; (4) Electronic distribution restricted to approved recipients only.</div>`:''}
+
+    <div style="padding:14px;background:${canClose?'var(--s4l)':'var(--s1l)'};border:1px solid ${canClose?'#a9dfbf':'#f5b7b1'};border-radius:8px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:${canClose?'var(--s4)':'var(--s1)'}">
+        ${canClose?'✅ All close-out requirements met — audit may be marked Closed.':'⚠️ Close-out incomplete — complete all checklist items above.'}
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">Audit checks: ${auditChecks.filter((a,i)=>dc['ack-'+i]).length}/${auditChecks.length} · Retain: ${retain.filter((r,i)=>dc['ret-'+i]).length}/${retain.length} · Destroy: ${destroy.filter((d,i)=>dc['des-'+i]).length}/${destroy.length}</div>
+    </div>
+
+    <button style="background:${canClose?'var(--s4)':'var(--sna)'};color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:14px;font-weight:700;cursor:${canClose?'pointer':'not-allowed'};opacity:${canClose?1:0.5}" ${canClose?'onclick="markClosed()"':''}>
+      ${canClose?'🔒 Mark Audit as Closed':'Complete all checklist items to enable close-out'}
+    </button>
+    ${dc.closedDate?`<div style="margin-top:10px;font-size:12px;color:var(--s4)">✅ Audit closed: ${new Date(dc.closedDate).toLocaleString()}</div>`:''}
+  </div>`;
+  updateProg();
+}
+function markClosed(){
+  if(!confirm('Mark this audit as CLOSED? This records the close-out date and time.'))return;
+  ST.docControl.closedDate=new Date().toISOString();ST.docControl.isClosed=true;save();
+  toast('Audit marked as Closed — '+new Date().toLocaleDateString(),'ok');showDocControl();
+}
 
 </script>
 </body>
